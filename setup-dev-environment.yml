@@ -1,0 +1,324 @@
+---
+- name: Setup dev environment
+  hosts: localhost
+  vars:
+    username: "{{ ansible_user_id }}"
+    dotfiles_repo: "https://github.com/mayerstrk/dotfiles.git"
+    dotfiles_local_path: "~/.dotfiles"
+    install_report: {}
+    homebrew_packages:
+      - fish
+      - pipx
+      - git
+      - lazygit
+      - neovim
+      - ripgrep
+      - ghq
+      - eza
+      - bat
+
+  pre_tasks:
+    - name: Check OS and initialize
+      block:
+        - name: Verify macOS environment
+          ansible.builtin.fail:
+            msg: "This playbook requires macOS. Current OS: {{ ansible_facts['os_family'] }}"
+          when: ansible_facts['os_family'] != 'Darwin'
+
+        - name: Initialize install report
+          set_fact:
+            install_report:
+              os_type: "{{ ansible_facts['os_family'] }}"
+              homebrew_status: "not checked"
+              packages_installed: []
+              packages_failed: []
+              fish_status: "not checked"
+              fisher_status: "not checked"
+              fisher_plugins: []
+              dotfiles_status: "not started"
+              configs_linked: []
+              backups_created: []
+
+        - name: Create readable timestamp
+          set_fact:
+            backup_timestamp: "{{ ansible_date_time.date }}_{{ ansible_date_time.time }}"
+      tags: always
+
+    - name: Handle Homebrew setup
+      block:
+        - name: Verify Homebrew installation
+          ansible.builtin.command: which brew
+          register: homebrew_status
+          ignore_errors: true
+          changed_when: false
+
+        - name: Log Homebrew status
+          ansible.builtin.debug:
+            msg: "Homebrew is {{ 'installed' if homebrew_status.rc == 0 else 'not installed' }}"
+
+        - name: Install Homebrew if missing
+          ansible.builtin.shell: |
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          register: homebrew_installation
+          when: homebrew_status.rc != 0
+
+        - name: Log Homebrew installation result
+          ansible.builtin.debug:
+            msg: "Homebrew installation {{ 'succeeded' if homebrew_installation is success else 'failed' }}"
+          when: homebrew_status.rc != 0
+      tags:
+        - always
+        - setup
+
+  tasks:
+    - name: Install Homebrew packages
+      block:
+        - name: Install package {{ item }}
+          ansible.builtin.command:
+            cmd: "brew install {{ item }}"
+          register: package_result
+          loop: "{{ homebrew_packages }}"
+          changed_when: "'already installed' not in package_result.stderr"
+          failed_when:
+            - package_result.rc != 0
+            - "'already installed' not in package_result.stderr"
+
+        - name: Log package installation status
+          ansible.builtin.debug:
+            msg: "Package {{ item.item }} {{ 'already installed' if 'already installed' in item.stderr else ('installed successfully' if item.rc == 0 else 'failed to install') }}"
+          loop: "{{ package_result.results }}"
+          loop_control:
+            label: "{{ item.item }}"
+
+        - name: Track package installation results
+          set_fact:
+            install_report: "{{ install_report | combine({
+              'packages_installed': install_report.packages_installed + [item.item],
+              'packages_failed': install_report.packages_failed + ([item.item] if item.failed else [])
+            }) }}"
+          loop: "{{ package_result.results }}"
+          loop_control:
+            label: "{{ item.item }}"
+      when: homebrew_status.rc == 0 or homebrew_installation is success
+      tags:
+        - setup
+        - packages
+
+    - name: Verify Fish installation
+      block:
+        - name: Check Fish shell status
+          ansible.builtin.command: which fish
+          register: fish_status
+          ignore_errors: true
+          changed_when: false
+
+        - name: Log Fish status
+          ansible.builtin.debug:
+            msg: "Fish shell is {{ 'installed' if fish_status.rc == 0 else 'not installed' }}"
+      tags:
+        - fish
+        - check
+
+    - name: Manage dotfiles
+      block:
+        - name: Check if dotfiles directory exists
+          ansible.builtin.stat:
+            path: "{{ dotfiles_local_path | expanduser }}"
+          register: dotfiles_status
+
+        - name: Create backup if dotfiles exist
+          ansible.builtin.command:
+            cmd: "cp -r {{ dotfiles_local_path | expanduser }} {{ dotfiles_local_path | expanduser }}.{{ backup_timestamp }}.bak"
+          when: dotfiles_status.stat.exists
+          register: backup_result
+
+        - name: Clone dotfiles repository
+          ansible.builtin.git:
+            repo: "{{ dotfiles_repo }}"
+            dest: "{{ dotfiles_local_path | expanduser }}"
+            force: yes
+            accept_hostkey: yes
+          register: dotfiles_clone
+
+        - name: Log clone status
+          ansible.builtin.debug:
+            msg: "Dotfiles repository {{ 'cloned successfully' if dotfiles_clone.changed else 'already exists' }}"
+      tags:
+        - dotfiles
+        - setup
+
+    - name: Manage config files
+      block:
+        - name: Check config directory status
+          ansible.builtin.stat:
+            path: ~/.config
+          register: config_status
+
+        - name: Log config status
+          ansible.builtin.debug:
+            msg: "Config directory {{ 'exists' if config_status.stat.exists else 'does not exist' }}"
+
+        - name: Backup existing config
+          ansible.builtin.command:
+            cmd: "cp -r ~/.config ~/.config.{{ backup_timestamp }}.bak"
+          when: config_status.stat.exists
+          register: config_backup
+
+        - name: Create config symlink
+          ansible.builtin.file:
+            src: "{{ dotfiles_local_path | expanduser }}/.config"
+            dest: ~/.config
+            state: link
+            force: yes
+          register: config_link
+
+        - name: Check gitconfig status
+          ansible.builtin.stat:
+            path: ~/.gitconfig
+          register: gitconfig_status
+
+        - name: Backup existing gitconfig
+          ansible.builtin.command:
+            cmd: "cp ~/.gitconfig ~/.gitconfig.{{ backup_timestamp }}.bak"
+          when: gitconfig_status.stat.exists
+          register: gitconfig_backup
+
+        - name: Create gitconfig symlink
+          ansible.builtin.file:
+            src: "{{ dotfiles_local_path | expanduser }}/.gitconfig"
+            dest: ~/.gitconfig
+            state: link
+            force: yes
+          register: gitconfig_link
+
+        - name: Update symlinks report
+          set_fact:
+            install_report: "{{ install_report | combine({
+              'configs_linked': (
+                (['config'] if config_link.changed else []) +
+                (['gitconfig'] if gitconfig_link.changed else [])
+              )
+            }) }}"
+      rescue:
+        - name: Log configuration failure
+          ansible.builtin.debug:
+            msg: "Failed to manage some configuration files"
+      tags:
+        - config
+        - setup
+
+    - name: Handle Fisher installation
+      block:
+        - name: Check Fisher status
+          ansible.builtin.stat:
+            path: "~/.config/fish/functions/fisher.fish"
+          register: fisher_status
+
+        - name: Log Fisher status
+          ansible.builtin.debug:
+            msg: "Fisher {{ 'is installed' if fisher_status.stat.exists else 'is not installed' }}"
+
+        - name: Install Fisher if missing
+          ansible.builtin.shell: |
+            curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | fish -c "source && fisher install jorgebucaran/fisher"
+          when: not fisher_status.stat.exists
+          register: fisher_installation
+
+        - name: Log Fisher installation
+          ansible.builtin.debug:
+            msg: "Fisher installation {{ 'succeeded' if fisher_installation is success else 'failed' }}"
+          when: not fisher_status.stat.exists
+
+        - name: Install Fisher plugins
+          ansible.builtin.shell: "fish -c 'fisher install {{ item }}'"
+          loop: "{{ lookup('file', '{{ dotfiles_local_path | expanduser }}/.config/fish/fish_plugins').split('\n') }}"
+          args:
+            executable: /opt/homebrew/bin/fish
+          when:
+            - item != ''
+            - fisher_status.stat.exists or fisher_installation is success
+          register: plugin_installation
+          ignore_errors: true
+
+        - name: Log plugin installation status
+          ansible.builtin.debug:
+            msg: "Plugin {{ item.item }} {{ 'installed successfully' if not item.failed else 'failed to install' }}"
+          loop: "{{ plugin_installation.results }}"
+          when: item.item != ''
+
+        - name: Update Fisher plugins report
+          set_fact:
+            install_report: "{{ install_report | combine({
+              'fisher_plugins': install_report.fisher_plugins + [item.item]
+            }) }}"
+          loop: "{{ plugin_installation.results }}"
+          when: item.changed and not item.failed
+      when: fish_status.rc == 0
+      tags:
+        - fish
+        - fisher
+        - plugins
+
+    - name: Configure default shell
+      block:
+        - name: Get Fish shell path
+          ansible.builtin.command: which fish
+          register: fish_path
+          changed_when: false
+
+        - name: Log Fish path
+          ansible.builtin.debug:
+            msg: "Fish shell path: {{ fish_path.stdout }}"
+
+        - name: Add Fish to allowed shells
+          ansible.builtin.lineinfile:
+            path: /etc/shells
+            line: "{{ fish_path.stdout }}"
+            state: present
+            create: false
+          become: true
+
+        - name: Log shells update
+          ansible.builtin.debug:
+            msg: "Added Fish to allowed shells"
+
+        - name: Set Fish as default shell
+          ansible.builtin.user:
+            name: "{{ username }}"
+            shell: "{{ fish_path.stdout }}"
+          become: true
+          register: shell_change
+
+        - name: Log shell change
+          ansible.builtin.debug:
+            msg: "Set Fish as default shell for {{ username }}"
+      when: fish_status.rc == 0
+      tags:
+        - fish
+        - shell
+
+  post_tasks:
+    - name: Display installation report
+      ansible.builtin.debug:
+        msg: |
+          Installation Report:
+          ===================
+          Operating System: {{ install_report.os_type }}
+          Homebrew Status: {{ 'Installed successfully' if homebrew_status.rc == 0 or homebrew_installation is success else 'Installation failed' }}
+
+          Packages Installed: {{ install_report.packages_installed | join(', ') }}
+          {% if install_report.packages_failed %}
+          Failed Packages: {{ install_report.packages_failed | join(', ') }}
+          {% endif %}
+
+          Fish Shell: {{ 'Installed' if fish_status.rc == 0 else 'Not installed' }}
+          Fisher: {{ 'Installed' if fisher_status.stat.exists else 'Not installed' }}
+          {% if install_report.fisher_plugins %}
+          Fisher Plugins: {{ install_report.fisher_plugins | join(', ') }}
+          {% endif %}
+
+          Dotfiles: {{ 'Cloned successfully' if dotfiles_clone.changed else 'Already existed' }}
+          Configs Linked: {{ install_report.configs_linked | join(', ') }}
+      tags:
+        - always
+        - report
