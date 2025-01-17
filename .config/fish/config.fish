@@ -15,3 +15,5 @@ bind \co _fzf_search_directory
 
 
 eval "$(/opt/homebrew/bin/brew shellenv)"
+
+eval "$(/opt/homebrew/bin/brew shellenv)"
