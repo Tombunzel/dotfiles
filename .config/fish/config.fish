@@ -39,6 +39,9 @@ set -gx PATH bin $PATH
 set -gx PATH ~/bin $PATH
 set -gx PATH ~/.local/bin $PATH
 
+# Set NVM directory
+set -x NVM_DIR $HOME/.nvm
+
 # NodeJS
 set -gx PATH node_modules/.bin $PATH
 
@@ -59,3 +62,7 @@ set LOCAL_CONFIG (dirname (status --current-filename))/config-local.fish
 if test -f $LOCAL_CONFIG
     source $LOCAL_CONFIG
 end
+
+# bun
+set --export BUN_INSTALL "$HOME/.bun"
+set --export PATH $BUN_INSTALL/bin $PATH
