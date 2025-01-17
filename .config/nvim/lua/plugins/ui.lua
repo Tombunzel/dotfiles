@@ -168,4 +168,27 @@ return {
 			},
 		},
 	},
+	{
+		"nvim-treesitter/nvim-treesitter-context",
+		dependencies = { "nvim-treesitter/nvim-treesitter" },
+		config = function()
+			require("treesitter-context").setup({
+				enable = true, -- Enable this plugin (can be toggled with commands)
+				throttle = true, -- Throttles plugin updates (improves performance)
+				max_lines = 0, -- Unlimited
+				patterns = {
+					-- Match patterns for all file types
+					default = {
+						"class",
+						"function",
+						"method",
+					},
+				},
+			})
+
+			-- Set custom highlight colors
+			vim.api.nvim_set_hl(0, "TreesitterContext", { bg = "#2E3440", fg = "#ECEFF4" })
+			vim.api.nvim_set_hl(0, "TreesitterContextSeparator", { bg = "#2E3440", fg = "#88C0D0" })
+		end,
+	},
 }
