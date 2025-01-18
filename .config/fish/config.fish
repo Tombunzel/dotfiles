@@ -66,3 +66,6 @@ end
 # bun
 set --export BUN_INSTALL "$HOME/.bun"
 set --export PATH $BUN_INSTALL/bin $PATH
+
+# enable starship promt https://starship.rs/guide
+starship init fish | source

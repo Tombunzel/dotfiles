@@ -5,11 +5,12 @@ local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 -- Set your preferred color scheme
-config.color_scheme = "AtelierSulphurpool"
+-- config.color_scheme = "AtelierSulphurpool"
+config.color_scheme = "Catppuccin Frappe"
 
 -- Enable transparency
-config.window_background_opacity = 0.90 -- Adjust opacity (0.0 = fully transparent, 1.0 = fully opaque)
-config.macos_window_background_blur = 20
+config.window_background_opacity = 0.75 -- Adjust opacity (0.0 = fully transparent, 1.0 = fully opaque)
+config.macos_window_background_blur = 35
 
 -- Key bindings for splitting panes and closing them
 config.keys = {
