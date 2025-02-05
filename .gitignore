@@ -1,1 +1,29 @@
-fish_variables
+# Fish shell
+.config/fish/fish_variables
+
+# Config directories to ignore
+.config/autostart/
+.config/github-copilot/
+.config/zed/
+.config/gh/
+
+# Package and database files
+**/*.mdb
+**/*.pkg
+**/*.pem
+**/*.key
+**/*.crt
+**/*.p12
+**/*.pfx
+**/*.cer
+**/*.der
+**/*.priv
+**/*.secret
+**/*.token
+**/*.env
+**/*.password
+**/*credential*
+**/*secret*
+**/*token*
+**/*password*
+**/*private*
