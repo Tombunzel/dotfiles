@@ -175,7 +175,7 @@ return {
 			require("treesitter-context").setup({
 				enable = true, -- Enable this plugin (can be toggled with commands)
 				throttle = true, -- Throttles plugin updates (improves performance)
-				max_lines = 0, -- Unlimited
+				max_lines = 2, -- Unlimited
 				patterns = {
 					-- Match patterns for all file types
 					default = {
@@ -191,4 +191,13 @@ return {
 			vim.api.nvim_set_hl(0, "TreesitterContextSeparator", { bg = "#2E3440", fg = "#88C0D0" })
 		end,
 	},
+	-- {
+	-- 	"echasnovski/mini.animate",
+	-- 	version = false,
+	-- 	enable = true,
+	--
+	-- 	config = function(_, opts)
+	-- 		require("mini.animate").setup()
+	-- 	end,
+	-- },
 }
