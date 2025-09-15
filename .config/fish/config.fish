@@ -1,31 +1,53 @@
-if status is-interactive
-    # Commands to run in interactive sessions can go here
+if not status is-interactive
+    # exit if not running interactively
+    exit
 end
 
+# -------------------------------------
+# --- 1. Core Environment and Setup ---
+# -------------------------------------
+
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Basic environment variables
+set -gx EDITOR nvim
+set -gx TERM xterm-256color
 set fish_greeting ""
 
-# Created by `pipx` on 2025-01-15 17:39:07
-set PATH $PATH /Users/mstark/.local/bin
-set -gx PATH ~/.local/bin $PATH
+# ---------------------------------------------
+# --- 2. Tool Configuration (fzf, NVM, Go, etc) ---
+# ---------------------------------------------
 
-set -gx TERM xterm-256color
+# fzf configuration
+set -x FZF_DEFAULT_COMMAND 'fd --type f --hidden --exclude build --exclude dist'
+fzf --fish | source
 
-#fzf.fish configure keybindings
-bind \co _fzf_search_directory
+# NVM (Node Version Manager)
+set -x NVM_DIR $HOME/.nvm
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# Go
+set -g GOPATH $HOME/go
 
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# bun
+set --export BUN_INSTALL "$HOME/.bun"
 
+# -------------------------------------
+# --- 3. PATH Management          ---
+# -------------------------------------
+# All PATHs are prepended here using the correct fish syntax.
+# Duplicates from the original file have been removed.
 
-# theme
-set -g theme_color_scheme terminal-dark
-set -g fish_prompt_pwd_dir_length 1
-set -g theme_display_user yes
-set -g theme_hide_hostname no
-set -g theme_hostname always
+set -gx PATH $HOME/bin $PATH
+set -gx PATH $HOME/.local/bin $PATH
+set -gx PATH $GOPATH/bin $PATH
+set -gx PATH $BUN_INSTALL/bin $PATH
+set -gx PATH /opt/homebrew/opt/libpq/bin $PATH # For postgresql clients
+set -gx PATH ./node_modules/.bin $PATH # Project-local node binaries
 
-# aliases
+# -------------------------------------
+# --- 4. Aliases                    ---
+# -------------------------------------
+
 alias ls "ls -p -G"
 alias la "ls -A"
 alias ll "ls -l"
@@ -33,29 +55,30 @@ alias lla "ll -A"
 alias g git
 command -qv nvim && alias vim nvim
 
-set -gx EDITOR nvim
+# -------------------------------------
+# --- 5. Theme & Prompt             ---
+# -------------------------------------
 
-set -gx PATH bin $PATH
-set -gx PATH ~/bin $PATH
-set -gx PATH ~/.local/bin $PATH
+# Your theme settings
+set -g theme_color_scheme terminal-dark
+set -g fish_prompt_pwd_dir_length 1
+set -g theme_display_user yes
+set -g theme_hide_hostname no
+set -g theme_hostname always
 
-# Set NVM directory
-set -x NVM_DIR $HOME/.nvm
+# -----------------------------------------------------------
+# --- 6. Sourced Configurations (OS-specific, local, prompt) --
+# -----------------------------------------------------------
 
-# NodeJS
-set -gx PATH node_modules/.bin $PATH
-
-# Go
-set -g GOPATH $HOME/go
-set -gx PATH $GOPATH/bin $PATH
-
+# OS-specific settings
 switch (uname)
     case Darwin
         source (dirname (status --current-filename))/config-osx.fish
     case Linux
         source (dirname (status --current-filename))/config-linux.fish
     case '*'
-        source (dirname (status --current-filename))/config-windows.fish
+        # Fallback for other systems, e.g., Windows
+        # source (dirname (status --current-filename))/config-windows.fish
 end
 
 set LOCAL_CONFIG (dirname (status --current-filename))/config-local.fish
@@ -63,12 +86,18 @@ if test -f $LOCAL_CONFIG
     source $LOCAL_CONFIG
 end
 
-# bun
-set --export BUN_INSTALL "$HOME/.bun"
-set --export PATH $BUN_INSTALL/bin $PATH
-
-# enable starship promt https://starship.rs/guide
 starship init fish | source
 
-# PATH
-export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+function __my_fzf_file_finder
+    fzf --height=40% --layout=reverse | read -l selected_file
+
+    if test -n "$selected_file"
+        commandline --insert " $selected_file"
+    end
+
+    commandline --function repaint
+end
+
+function fish_user_key_bindings
+    bind \cT __my_fzf_file_finder
+end

@@ -1,5 +1,7 @@
 [user]
-	name = mstarkcode
-	email = mstarkcode@gmail.com
+  name = tombunzel
+  email = bunzel.tom@gmail.com
+	; name = mstarkcode
+	; email = mstarkcode@gmail.com
 [init]
 	defaultBranch = development

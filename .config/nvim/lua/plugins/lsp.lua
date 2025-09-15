@@ -1,65 +1,116 @@
 return {
-	-- tools
+	-- Installs LSP servers, formatters, and linters
 	{
 		"williamboman/mason.nvim",
-		opts = function(_, opts)
-			vim.list_extend(opts.ensure_installed, {
+		config = function()
+			require("mason").setup()
+		end,
+	},
+
+	-- Bridges mason.nvim with nvim-lspconfig for automatic server setup
+	{
+		"williamboman/mason-lspconfig.nvim",
+		opts = {
+			-- This is your list of servers that mason-lspconfig will ensure are installed.
+			ensure_installed = {
 				"stylua",
 				"selene",
 				"luacheck",
 				"shellcheck",
 				"shfmt",
 				"tailwindcss-language-server",
-				"typescript-language-server",
+				-- "typescript-language-server",
 				"css-lsp",
-			})
-		end,
+				"html",
+				"yamlls",
+				"vtsls",
+				"terraform-ls",
+			},
+		},
 	},
 
-	-- lsp servers
+	-- The main LSP configuration
 	{
 		"neovim/nvim-lspconfig",
-		opts = {
-			inlay_hints = { enabled = false },
-			---@type lspconfig.options
-			servers = {
+		dependencies = {
+			"williamboman/mason.nvim",
+			"williamboman/mason-lspconfig.nvim",
+		},
+		-- This config function REPLACES the LazyVim default, fixing the hover bug.
+		config = function()
+			-- This function runs for each LSP server that attaches to a buffer.
+			-- It's the perfect place for our keymaps.
+			local on_attach = function(client, bufnr)
+				-- --- Your Custom Keymaps ---
+				vim.keymap.set("n", "K", vim.lsp.buf.hover, { buffer = bufnr, desc = "LSP Hover (Type/Docs)" })
+				vim.keymap.set("n", "gl", vim.diagnostic.open_float, { buffer = bufnr, desc = "Show Line Diagnostics" })
+				vim.keymap.set("n", "gd", function()
+					require("telescope.builtin").lsp_definitions({ reuse_win = false })
+				end, { buffer = bufnr, desc = "Goto Definition (Telescope)" })
+
+				-- --- Other Standard LSP Keymaps ---
+				vim.keymap.set("n", "gD", vim.lsp.buf.declaration, { buffer = bufnr, desc = "Go to Declaration" })
+				vim.keymap.set("n", "gr", vim.lsp.buf.references, { buffer = bufnr, desc = "Go to References" })
+				vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, { buffer = bufnr, desc = "Rename Symbol" })
+				vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { buffer = bufnr, desc = "Code Action" })
+			end
+
+			-- Standard capabilities for LSP servers.
+			-- If you use nvim-cmp for autocompletion, you would get these from there.
+			local capabilities = vim.lsp.protocol.make_client_capabilities()
+
+			local lspconfig = require("lspconfig")
+
+			-- --- Your Custom Server Configurations ---
+			-- We define a table holding all your server-specific settings.
+			local servers = {
 				cssls = {},
 				tailwindcss = {
-					root_dir = function(...)
-						return require("lspconfig.util").root_pattern(".git")(...)
+					root_dir = lspconfig.util.root_pattern(".git"),
+				},
+				vtsls = {
+					on_attach = function(client, bufnr)
+						on_attach(client, bufnr)
+
+						local root = require("lspconfig.util").root_pattern(".git")(vim.api.nvim_buf_get_name(bufnr))
+						if root and vim.fn.filereadable(root .. "/.prettierrc") > 0 then
+							-- 3. If found, it disables the vtsls formatter to prevent conflicts
+							client.server_capabilities.documentFormattingProvider = false
+							client.server_capabilities.documentRangeFormattingProvider = false
+						end
 					end,
 				},
-				tsserver = {
-					root_dir = function(...)
-						return require("lspconfig.util").root_pattern(".git")(...)
-					end,
-					single_file_support = false,
-					settings = {
-						typescript = {
-							inlayHints = {
-								includeInlayParameterNameHints = "literal",
-								includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-								includeInlayFunctionParameterTypeHints = true,
-								includeInlayVariableTypeHints = false,
-								includeInlayPropertyDeclarationTypeHints = true,
-								includeInlayFunctionLikeReturnTypeHints = true,
-								includeInlayEnumMemberValueHints = true,
-							},
-						},
-						javascript = {
-							inlayHints = {
-								includeInlayParameterNameHints = "all",
-								includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-								includeInlayFunctionParameterTypeHints = true,
-								includeInlayVariableTypeHints = true,
-								includeInlayPropertyDeclarationTypeHints = true,
-								includeInlayFunctionLikeReturnTypeHints = true,
-								includeInlayEnumMemberValueHints = true,
-							},
-						},
-					},
-				},
+				-- tsserver = {
+				-- 	single_file_support = false,
+				-- 	settings = {
+				-- 		typescript = {
+				-- 			inlayHints = {
+				-- 				includeInlayParameterNameHints = "literal",
+				-- 				includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+				-- 				includeInlayFunctionParameterTypeHints = true,
+				-- 				includeInlayVariableTypeHints = false,
+				-- 				includeInlayPropertyDeclarationTypeHints = true,
+				-- 				includeInlayFunctionLikeReturnTypeHints = true,
+				-- 				includeInlayEnumMemberValueHints = true,
+				-- 			},
+				-- 		},
+				-- 		javascript = {
+				-- 			inlayHints = {
+				-- 				includeInlayParameterNameHints = "all",
+				-- 				includeInlayParameterNameHintsWhenArgumentMatchesName = false,
+				-- 				includeInlayFunctionParameterTypeHints = true,
+				-- 				includeInlayVariableTypeHints = true,
+				-- 				includeInlayPropertyDeclarationTypeHints = true,
+				-- 				includeInlayFunctionLikeReturnTypeHints = true,
+				-- 				includeInlayEnumMemberValueHints = true,
+				-- 			},
+				-- 		},
+				-- 	},
+				-- },
 				html = {},
+				terraformls = {
+					filetypes = { "terraform", "tf", "tfvars" },
+				},
 				yamlls = {
 					settings = {
 						yaml = {
@@ -68,22 +119,11 @@ return {
 					},
 				},
 				lua_ls = {
-					-- enabled = false,
 					single_file_support = true,
 					settings = {
 						Lua = {
-							workspace = {
-								checkThirdParty = false,
-							},
-							completion = {
-								workspaceWord = true,
-								callSnippet = "Both",
-							},
-							misc = {
-								parameters = {
-									-- "--log-level=trace",
-								},
-							},
+							workspace = { checkThirdParty = false },
+							completion = { workspaceWord = true, callSnippet = "Both" },
 							hint = {
 								enable = true,
 								setType = false,
@@ -92,71 +132,52 @@ return {
 								semicolon = "Disable",
 								arrayIndex = "Disable",
 							},
-							doc = {
-								privateName = { "^_" },
-							},
-							type = {
-								castNumberToInteger = true,
-							},
+							doc = { privateName = { "^_" } },
+							type = { castNumberToInteger = true },
 							diagnostics = {
 								disable = { "incomplete-signature-doc", "trailing-space" },
-								-- enable = false,
-								groupSeverity = {
-									strong = "Warning",
-									strict = "Warning",
-								},
+								groupSeverity = { strong = "Warning", strict = "Warning" },
 								groupFileStatus = {
-									["ambiguity"] = "Opened",
-									["await"] = "Opened",
-									["codestyle"] = "None",
-									["duplicate"] = "Opened",
-									["global"] = "Opened",
-									["luadoc"] = "Opened",
-									["redefined"] = "Opened",
-									["strict"] = "Opened",
-									["strong"] = "Opened",
+									ambiguity = "Opened",
+									await = "Opened",
+									codestyle = "None",
+									duplicate = "Opened",
+									global = "Opened",
+									luadoc = "Opened",
+									redefined = "Opened",
+									strict = "Opened",
+									strong = "Opened",
 									["type-check"] = "Opened",
-									["unbalanced"] = "Opened",
-									["unused"] = "Opened",
+									unbalanced = "Opened",
+									unused = "Opened",
 								},
 								unusedLocalExclude = { "_*" },
 							},
-							format = {
-								enable = false,
-								defaultConfig = {
-									indent_style = "space",
-									indent_size = "2",
-									continuation_indent_size = "2",
-								},
-							},
+							format = { enable = false },
 						},
 					},
 				},
-			},
-			setup = {},
-		},
-	},
-	{
-		"neovim/nvim-lspconfig",
-		opts = function()
-			local keys = require("lazyvim.plugins.lsp.keymaps").get()
-			vim.list_extend(keys, {
-				{
-					"gd",
-					function()
-						-- DO NOT RESUSE WINDOW
-						require("telescope.builtin").lsp_definitions({ reuse_win = false })
-					end,
-					desc = "Goto Definition",
-					has = "definition",
-				},
-			})
+			}
+
+			-- This loop sets up every server with your custom settings.
+			for server_name, server_config in pairs(servers) do
+				-- Merge the server-specific settings with our shared settings
+				local final_config = vim.tbl_deep_extend("force", {
+					on_attach = on_attach,
+					capabilities = capabilities,
+					-- This carries over your global preference from your old file
+					inlay_hints = { enabled = false },
+				}, server_config)
+
+				lspconfig[server_name].setup(final_config)
+			end
 		end,
 	},
+
+	-- We can keep your markview config here, correctly configured to be lazy.
 	{
 		"OXY2DEV/markview.nvim",
-		lazy = false,
-
+		ft = { "markdown" }, -- Only loads for markdown files
 		dependencies = {
 			"nvim-treesitter/nvim-treesitter",
 			"nvim-tree/nvim-web-devicons",

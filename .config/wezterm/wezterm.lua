@@ -9,7 +9,7 @@ local config = wezterm.config_builder()
 config.color_scheme = "Catppuccin Frappe"
 
 -- Enable transparency
-config.window_background_opacity = 0.75 -- Adjust opacity (0.0 = fully transparent, 1.0 = fully opaque)
+config.window_background_opacity = 0.90 -- Adjust opacity (0.0 = fully transparent, 1.0 = fully opaque)
 config.macos_window_background_blur = 35
 
 -- Key bindings for splitting panes and closing them
@@ -19,6 +19,12 @@ config.keys = {
 		key = "Enter",
 		mods = "CTRL|SHIFT",
 		action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }),
+	},
+	-- Split horizontally (Ctrl+Shift+l+Enter)
+	{
+		key = "\\",
+		mods = "CTRL|SHIFT",
+		action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }),
 	},
 	-- Close the current pane (Ctrl+Shift+W)
 	{
