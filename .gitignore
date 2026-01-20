@@ -6,6 +6,8 @@
 .config/github-copilot/
 .config/zed/
 .config/gh/
+.config/gcloud
+.config/configstore
 
 # Package and database files
 **/*.mdb
