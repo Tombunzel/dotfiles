@@ -101,3 +101,6 @@ end
 function fish_user_key_bindings
     bind \cT __my_fzf_file_finder
 end
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/tombunzel/Downloads/google-cloud-sdk/path.fish.inc' ]; . '/Users/tombunzel/Downloads/google-cloud-sdk/path.fish.inc'; end

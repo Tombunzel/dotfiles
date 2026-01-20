@@ -1,0 +1,1 @@
+{"binaries":["tursodb"],"binary_aliases":{},"cdylibs":[],"cstaticlibs":[],"install_layout":"flat","install_prefix":"/Users/tombunzel/.turso","modify_path":true,"provider":{"source":"cargo-dist","version":"0.30.0"},"source":{"app_name":"turso_cli","name":"turso","owner":"tursodatabase","release_type":"github"},"version":"0.3.2"}
