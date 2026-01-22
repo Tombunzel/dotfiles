@@ -20,10 +20,10 @@ config.keys = {
 		mods = "CTRL|SHIFT",
 		action = wezterm.action.SplitVertical({ domain = "CurrentPaneDomain" }),
 	},
-	-- Split horizontally (Ctrl+Shift+l+Enter)
+	-- Split horizontally (Ctrl+Shift+Alt+Enter)
 	{
-		key = "\\",
-		mods = "CTRL|SHIFT",
+		key = "Enter",
+		mods = "CTRL|SHIFT|ALT",
 		action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }),
 	},
 	-- Close the current pane (Ctrl+Shift+W)
