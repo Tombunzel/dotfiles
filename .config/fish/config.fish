@@ -54,6 +54,7 @@ alias ll "ls -l"
 alias lla "ll -A"
 alias g git
 command -qv nvim && alias vim nvim
+alias killadobe='pkill -f "Adobe|Creative|CCXProcess|Core Sync|IPC Broker" && echo "💥 Adobe processes killed."'
 
 # -------------------------------------
 # --- 5. Theme & Prompt             ---
@@ -103,4 +104,6 @@ function fish_user_key_bindings
 end
 
 # The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/tombunzel/Downloads/google-cloud-sdk/path.fish.inc' ]; . '/Users/tombunzel/Downloads/google-cloud-sdk/path.fish.inc'; end
+if [ -f '/Users/tombunzel/Downloads/google-cloud-sdk/path.fish.inc' ]
+    . '/Users/tombunzel/Downloads/google-cloud-sdk/path.fish.inc'
+end
