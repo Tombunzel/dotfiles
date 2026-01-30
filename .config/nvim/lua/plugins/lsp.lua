@@ -1,7 +1,7 @@
 return {
 	-- Installs LSP servers, formatters, and linters
 	{
-		"williamboman/mason.nvim",
+		"mason-org/mason.nvim",
 		config = function()
 			require("mason").setup()
 		end,
@@ -9,7 +9,7 @@ return {
 
 	-- Bridges mason.nvim with nvim-lspconfig for automatic server setup
 	{
-		"williamboman/mason-lspconfig.nvim",
+		"mason-org/mason-lspconfig.nvim",
 		opts = {
 			-- This is your list of servers that mason-lspconfig will ensure are installed.
 			ensure_installed = {
@@ -25,6 +25,8 @@ return {
 				"yamlls",
 				"vtsls",
 				"terraform-ls",
+				"pyright",
+				"ruff",
 			},
 		},
 	},
@@ -33,8 +35,8 @@ return {
 	{
 		"neovim/nvim-lspconfig",
 		dependencies = {
-			"williamboman/mason.nvim",
-			"williamboman/mason-lspconfig.nvim",
+			"mason-org/mason.nvim",
+			"mason-org/mason-lspconfig.nvim",
 		},
 		-- This config function REPLACES the LazyVim default, fixing the hover bug.
 		config = function()
@@ -78,6 +80,26 @@ return {
 							client.server_capabilities.documentFormattingProvider = false
 							client.server_capabilities.documentRangeFormattingProvider = false
 						end
+					end,
+				},
+				pyright = {
+					settings = {
+						python = {
+							analysis = {
+								typeCheckingMode = "basic",
+								autoSearchPaths = true,
+								useLibraryCodeForTypes = true,
+							},
+						},
+					},
+				},
+				ruff = {
+					on_attach = function(client, bufnr)
+						-- Run the global keymaps first
+						on_attach(client, bufnr)
+
+						-- Disable hover from Ruff to prefer Pyright's more detailed docs
+						client.server_capabilities.hoverProvider = false
 					end,
 				},
 				-- tsserver = {
