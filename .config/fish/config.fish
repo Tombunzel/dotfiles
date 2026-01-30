@@ -14,6 +14,18 @@ set -gx EDITOR nvim
 set -gx TERM xterm-256color
 set fish_greeting ""
 
+# -------------------------------------
+# --- 1.1 Clear universal variables ---
+# ---   (Migration for Fish 4.3+)   ---
+# -------------------------------------
+
+# 1. Wipe the old universal keybinding variable
+set --erase --universal fish_key_bindings
+
+# 2. Wipe the old universal color variables
+set --universal --names | grep '^fish_color_' | xargs set --erase --universal 2>/dev/null or true
+set --universal --names | grep '^fish_pager_color_' | xargs set --erase --universal 2>/dev/null or true
+
 # ---------------------------------------------
 # --- 2. Tool Configuration (fzf, NVM, Go, etc) ---
 # ---------------------------------------------
@@ -60,12 +72,41 @@ alias killadobe='pkill -f "Adobe|Creative|CCXProcess|Core Sync|IPC Broker" && ec
 # --- 5. Theme & Prompt             ---
 # -------------------------------------
 
-# Your theme settings
+# Theme settings
 set -g theme_color_scheme terminal-dark
 set -g fish_prompt_pwd_dir_length 1
 set -g theme_display_user yes
 set -g theme_hide_hostname no
 set -g theme_hostname always
+
+# Syntax Highlighting Colors (Migrated from Fish 4.3 auto-config)
+set --global fish_color_autosuggestion brblack
+set --global fish_color_cancel -r
+set --global fish_color_command normal
+set --global fish_color_comment red
+set --global fish_color_cwd green
+set --global fish_color_cwd_root red
+set --global fish_color_end green
+set --global fish_color_error brred
+set --global fish_color_escape brcyan
+set --global fish_color_history_current --bold
+set --global fish_color_host normal
+set --global fish_color_host_remote yellow
+set --global fish_color_normal normal
+set --global fish_color_operator brcyan
+set --global fish_color_param cyan
+set --global fish_color_quote yellow
+set --global fish_color_redirection cyan --bold
+set --global fish_color_search_match white --background=brblack
+set --global fish_color_selection white --bold --background=brblack
+set --global fish_color_status red
+set --global fish_color_user brgreen
+set --global fish_color_valid_path --underline
+set --global fish_pager_color_completion normal
+set --global fish_pager_color_description yellow -i
+set --global fish_pager_color_prefix normal --bold --underline
+set --global fish_pager_color_progress brwhite --background=cyan
+set --global fish_pager_color_selected_background -r
 
 # -----------------------------------------------------------
 # --- 6. Sourced Configurations (OS-specific, local, prompt) --
