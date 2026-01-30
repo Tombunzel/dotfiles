@@ -14,7 +14,7 @@ return {
 	},
 
 	{
-		"echasnovski/mini.hipatterns",
+		"nvim-mini/mini.nvim",
 		event = "BufReadPre",
 		opts = {
 			highlighters = {
@@ -31,6 +31,18 @@ return {
 						return MiniHipatterns.compute_hex_color_group(hex_color, "bg")
 					end,
 				},
+			},
+		},
+	},
+
+	{
+		"lewis6991/gitsigns.nvim",
+		opts = {
+			current_line_blame = true, -- This turns on the ghost text by default
+			current_line_blame_opts = {
+				delay = 500, -- 0.5 second delay so it's not too jumpy
+				virt_text_pos = "eol",
+				ignore_whitespace = true,
 			},
 		},
 	},

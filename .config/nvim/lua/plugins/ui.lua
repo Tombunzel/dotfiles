@@ -191,7 +191,7 @@ return {
 		end,
 	},
 	-- {
-	-- 	"echasnovski/mini.animate",
+	-- 	"nvim-mini/mini.nvim",
 	-- 	version = false,
 	-- 	enable = true,
 	--

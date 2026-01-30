@@ -4,6 +4,9 @@ return {
 	{
 		"nvim-treesitter/nvim-treesitter",
 		opts = {
+			highlight = { enable = true },
+			indent = { enable = true },
+
 			ensure_installed = {
 				"astro",
 				"cmake",
@@ -53,7 +56,7 @@ return {
 			},
 		},
 		config = function(_, opts)
-			require("nvim-treesitter.configs").setup(opts)
+			require("nvim-treesitter").setup(opts)
 
 			-- MDX
 			vim.filetype.add({
