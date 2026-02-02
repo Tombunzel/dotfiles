@@ -58,8 +58,14 @@ return {
 			end
 
 			-- Standard capabilities for LSP servers.
-			-- If you use nvim-cmp for autocompletion, you would get these from there.
+			-- If you use nvim-cmp or blink.cmp for autocompletion, you would get these from there.
 			local capabilities = vim.lsp.protocol.make_client_capabilities()
+			local has_blink, blink = pcall(require, "blink.cmp")
+			if has_blink then
+				capabilities = blink.get_lsp_capabilities(capabilities)
+			end
+			-- Force utf-16 to resolve position encoding mismatch warnings
+			capabilities.offsetEncoding = { "utf-16" }
 
 			local lspconfig = require("lspconfig")
 
@@ -86,9 +92,13 @@ return {
 					settings = {
 						python = {
 							analysis = {
-								typeCheckingMode = "basic",
+								autoImportCompletions = true,
+								typeCheckingMode = "standard",
 								autoSearchPaths = true,
 								useLibraryCodeForTypes = true,
+								diagnosticMode = "workspace",
+								indexing = true,
+								extraPaths = { "." },
 							},
 						},
 					},
@@ -97,10 +107,15 @@ return {
 					on_attach = function(client, bufnr)
 						-- Run the global keymaps first
 						on_attach(client, bufnr)
-
 						-- Disable hover from Ruff to prefer Pyright's more detailed docs
 						client.server_capabilities.hoverProvider = false
 					end,
+					init_options = {
+						settings = {
+							-- Any extra ruff settings can go here
+							args = {},
+						},
+					},
 				},
 				-- tsserver = {
 				-- 	single_file_support = false,
